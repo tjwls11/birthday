@@ -1,0 +1,524 @@
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Montserrat:wght@700&display=swap');
+
+:root {
+  --pink: #ff69b4;
+  --pink-200: #ffb6c1;
+  --bg: #fff0f6;
+
+  --glass-bg: rgba(255, 255, 255, 0.28);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --shadow-1: 0 28px 80px rgba(255, 105, 180, 0.28);
+  --shadow-2: 0 12px 40px rgba(255, 105, 180, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Gowun Dodum', 'Montserrat', 'Noto Sans KR', Arial, sans-serif;
+  background: var(--bg);
+}
+
+.app-root {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+/* 공통 버튼 */
+.btn {
+  background: linear-gradient(90deg, var(--pink-200), var(--pink));
+  color: #fff;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.7rem 1.3rem;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(255, 105, 180, 0.25);
+}
+.btn.ghost {
+  background: #fff;
+  color: var(--pink);
+  border: 2px solid var(--pink);
+  box-shadow: none;
+}
+
+/* 화면 중앙(폰 비율 우선) */
+.screen-center {
+  width: min(420px, 94vw);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* ===== Password Gate ===== */
+.gate {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+.gate-card {
+  width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 20px 60px rgba(255, 105, 180, 0.25);
+}
+.avatar-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--pink-200);
+  box-shadow: 0 4px 18px rgba(255, 105, 180, 0.3);
+}
+.gate-card input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 2px solid var(--pink-200);
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+}
+.hint {
+  color: var(--pink);
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+.err {
+  color: #e03131;
+  font-weight: 700;
+}
+
+/* ===== Stage (배경 단색, 테두리/그림자 없음) ===== */
+.stage-wrap {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+.stage {
+  position: relative;
+  width: min(420px, 94vw);
+  aspect-ratio: 3/4;
+  display: block;
+
+  border-radius: 0;
+  background: var(--bg);
+  box-shadow: none;
+  overflow: visible; /* ✅ 위로 튀어나오는 아이콘 보이도록 */
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4px; /* 머리 위 간격 */
+}
+
+/* 키티 이미지 */
+.kitty-img {
+  display: block;
+  max-width: 320px;
+  margin: 40px auto 0;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ===== 상단 중앙 아이콘(이미지) ===== */
+.icon-buttons.in-stage {
+  position: absolute;
+  top: -72px; /* ✅ 머리 위로 올림 */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  z-index: 10;
+}
+
+.icon-btn:hover {
+  transform: scale(1.06);
+  background: #fff;
+}
+.icon-btn {
+  width: 100px;
+  height: 100px;
+  border: none;
+  background: none;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* ✅ 이미지 꽉 차게 */
+  display: block;
+}
+
+/* ===== 봉투 클릭  ===== */
+.hotspot-env {
+  position: absolute;
+  left: 23%;
+  right: 23%;
+  height: 22%;
+  bottom: 32%; /* 높이 */
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  z-index: 2;
+  /* 디버깅용
+  outline: 2px dashed rgba(255,105,180,.45); outline-offset:2px;
+  */
+}
+
+/* ===== 초대장 모달 ===== */
+.invite-panel {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  visibility: hidden;
+  opacity: 0;
+  z-index: 40;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+  background: rgba(0, 0, 0, 0.18);
+}
+.invite-panel.open {
+  visibility: visible;
+  opacity: 1;
+}
+
+.invite-card {
+  position: relative;
+  width: min(420px, 92vw);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: var(--shadow-2), 0 20px 60px rgba(0, 0, 0, 0.18);
+  transform-origin: bottom center;
+  animation: invitePop 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+}
+@keyframes invitePop {
+  0% {
+    transform: translateY(24px) scale(0.96);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-6px) scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.invite-photo {
+  width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 12px;
+  background: #fff6fa;
+  margin-bottom: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  background-position: center;
+  background-size: cover;
+}
+.invite-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  background: #fff6fa;
+  padding: 0.35rem 0.6rem;
+  margin: 0.25rem 0;
+  border-radius: 8px;
+  color: #c2255c;
+  box-shadow: 0 1px 4px rgba(255, 182, 193, 0.6);
+}
+.invite-label {
+  min-width: 56px;
+  font-weight: 700;
+  color: #ff69b4;
+}
+.invite-title {
+  text-align: center;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(90deg, #ff69b4, #ffb6c1);
+  padding: 0.35rem 0;
+  border-radius: 8px;
+  margin: 0.7rem 0 0.25rem;
+  letter-spacing: 0.08em;
+}
+.invite-subtitle {
+  text-align: center;
+  color: #c2255c;
+}
+
+/* 닫기(X) 버튼 */
+.invite-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 800;
+  color: #333;
+  line-height: 1;
+  z-index: 10;
+}
+.invite-close:hover {
+  color: #000;
+  transform: scale(1.08);
+}
+
+/* ===== 메시지 페이지 ===== */
+.message-page {
+  background-repeat: no-repeat; /* 반복 X */
+  background-position: center; /* 가운데 정렬 */
+  background-size: contain; /* 원본 크기 비율 유지하며 줄이기 */
+}
+
+.msg-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-position: center;
+  background-size: cover;
+  filter: brightness(0.9);
+}
+.msg-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid #ffd1df;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 12px 40px rgba(255, 105, 180, 0.2);
+}
+.msg-card input,
+.msg-card textarea {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 2px solid var(--pink-200);
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+}
+.msg-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* 풍선 */
+#balloon-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.balloon-float {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(
+      circle at 30% 30%,
+      rgba(255, 255, 255, 0.65),
+      rgba(255, 255, 255, 0) 60%
+    ),
+    var(--balloon-bg, rgba(255, 182, 193, 0.3));
+  border: 2px solid var(--balloon-border, rgba(255, 182, 193, 0.9));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  animation: floatY var(--dur, 6s) ease-in-out infinite alternate,
+    driftX var(--drift, 4s) ease-in-out infinite alternate;
+  backdrop-filter: blur(0.5px);
+}
+@keyframes floatY {
+  0% {
+    transform: translateY(12px) scale(1);
+  }
+  100% {
+    transform: translateY(-28px) scale(1.06);
+  }
+}
+@keyframes driftX {
+  0% {
+    margin-left: 0;
+  }
+  100% {
+    margin-left: var(--mx, 18px);
+  }
+}
+
+/* 카메라 페이지 자리 */
+.camera-wrap {
+  width: min(420px, 94vw);
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow-2);
+}
+
+/* 관리자 */
+.admin-wrap {
+  width: min(520px, 96vw);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow: auto;
+}
+.admin-item {
+  background: #fff6fa;
+  border: 1px solid #ffd1df;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+/* 반응형 미세 보정 */
+@media (min-width: 700px) {
+  .stage {
+    width: 440px;
+  }
+  .icon-btn {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* ===== 봉투 밑 안내 문구 ===== */
+.envelope-hint {
+  margin-top: -8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--pink);
+  text-align: center;
+  animation: hintBlink 1.4s ease-in-out infinite; /* 살짝 반짝 효과 */
+}
+@keyframes hintBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* 메시지 페이지 */
+.message-page {
+  min-height: 100dvh;
+  width: min(480px, 96vw);
+  margin: 0 auto;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+/* 좌상단 홈 버튼 (이미지 크기 고정, 배경/테두리 없음) */
+.home-btn {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.home-btn img {
+  width: 150%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18));
+}
+
+/* 우하단 플로팅 메시지 버튼 */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: 60px;
+  z-index: 30;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #ff69b4, #ff85c7);
+  box-shadow: 0 12px 30px rgba(255, 105, 180, 0.35);
+}
+.fab:active {
+  transform: translateY(1px);
+}
+
+/* 풍선 컨테이너(안 보이면 z-index 때문일 수 있어서 고정) */
+#balloon-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 메시지 입력 모달 */
+.msg-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+/* 모달 카드 (이미 기존 .msg-card가 있으면 그대로 사용) */
+.msg-modal .msg-card {
+  width: min(420px, 92vw);
+  background: rgba(255, 255, 255, 0.96);
+  border: 2px solid #ffd1df;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
