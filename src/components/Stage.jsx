@@ -68,6 +68,7 @@ export default function Stage({ onEnvelopeToggle }) {
           top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
           left: '50%',
           transform: 'translateX(-50%)',
+          zIndex: 9999,
           background: '#fff0f5',
           border: '2px solid #ff9eb5',
           borderRadius: '20px',
