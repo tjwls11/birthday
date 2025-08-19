@@ -65,7 +65,7 @@ export default function Stage({ onEnvelopeToggle }) {
       <div
         style={{
           position: 'fixed',
-          top: '50px',
+          top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
           left: '50%',
           transform: 'translateX(-50%)',
           background: '#fff0f5',
@@ -75,9 +75,10 @@ export default function Stage({ onEnvelopeToggle }) {
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
-          zIndex: 1000,
+          zIndex: 9999,
           fontFamily: '"Cute Font", cursive',
           boxShadow: '2px 2px 6px rgba(0,0,0,0.1)',
+          maxWidth: 'calc(100vw - 24px)',
         }}
       >
         <span style={{ fontSize: '18px', color: '#ff4d88' }}>🎵 BGM</span>
