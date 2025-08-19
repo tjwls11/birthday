@@ -1,12 +1,21 @@
-import React, { useRef, useState } from 'react'
-import homeIcon from '../assets/home-icon.png' // 홈 버튼 이미지 (분홍색)
-import bgImg from '../assets/message-bg.png' // 배경 이미지
-import hachuping from '../assets/hachuping.png'
+import React, { useRef, useState, useEffect } from 'react'
+import { db } from '../firebase'
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+} from 'firebase/firestore'
+import homeIcon from '../assets/home-icon.png'
+import bgImg from '../assets/message-bg.png'
 
 export default function MessagePage() {
   const [formOpen, setFormOpen] = useState(false)
   const [nickname, setNickname] = useState('')
   const [text, setText] = useState('')
+  const [messages, setMessages] = useState([])
   const containerRef = useRef(null)
 
   const RAINBOW = [
@@ -19,22 +28,40 @@ export default function MessagePage() {
     [175, 82, 222],
   ]
 
-  function submit(e) {
+  // Firestore 구독 (실시간 반영)
+  useEffect(() => {
+    const q = query(collection(db, 'messages'), orderBy('createdAt', 'asc'))
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+      setMessages(data)
+    })
+    return () => unsub()
+  }, [])
+
+  // 메시지 수만큼 풍선 다시 그림
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    el.innerHTML = ''
+    messages.forEach(() => spawnBalloon(el))
+  }, [messages])
+
+  async function submit(e) {
     e.preventDefault()
     if (!nickname.trim() || !text.trim()) return
 
-    // 풍선 여러 개 추가
-    spawnBalloon()
+    await addDoc(collection(db, 'messages'), {
+      nickname,
+      text,
+      createdAt: serverTimestamp(),
+    })
 
-    // 입력값 초기화
     setNickname('')
     setText('')
     setFormOpen(false)
   }
 
-  function spawnBalloon() {
-    const el = containerRef.current
-    if (!el) return
+  function spawnBalloon(el) {
     const rect = el.getBoundingClientRect()
     const w = rect.width || window.innerWidth
     const h = rect.height || window.innerHeight
@@ -63,7 +90,6 @@ export default function MessagePage() {
     b.style.setProperty('--mx', `${mx}px`)
 
     el.appendChild(b)
-    setTimeout(() => b.remove(), 12000)
   }
 
   function rand(min, max) {
@@ -76,10 +102,11 @@ export default function MessagePage() {
       <button className="home-btn" onClick={() => (window.location.href = '/')}>
         <img src={homeIcon} alt="홈으로" />
       </button>
+
       <p
         style={{
           position: 'absolute',
-          top: '80px', // 화면 상단에서 60px 내려옴
+          top: '150px',
           left: '50%',
           transform: 'translateX(-50%)',
           textAlign: 'center',
@@ -89,9 +116,9 @@ export default function MessagePage() {
         }}
       >
         나연이에게 축하메시지를 보내주세요 <br />
-        메시지를 보낼 때마다 풍선이 추가됩니다{' '}
+        메시지를 보낼 때마다 풍선이 추가됩니다
       </p>
-      {/* 배경 이미지를 태그로 넣어서 크기 쉽게 제어 */}
+
       <img
         src={bgImg}
         alt="배경"
@@ -100,17 +127,15 @@ export default function MessagePage() {
           width: 'min(300px, 94vw)',
           height: 'auto',
           display: 'block',
-          margin: '200px auto 0', // ← 위쪽 여백 줘서 이미지 아래로 내리기
+          margin: '300px auto 0',
           filter: 'brightness(0.92)',
           userSelect: 'none',
           pointerEvents: 'none',
         }}
       />
 
-      {/* 풍선 올라가는 영역 */}
       <div id="balloon-container" ref={containerRef} />
 
-      {/* 오른쪽 하단 메시지 버튼 */}
       <button
         className="fab"
         onClick={() => setFormOpen(true)}
@@ -119,23 +144,12 @@ export default function MessagePage() {
         💌
       </button>
 
-      {/* 메시지 입력 폼 (모달) */}
       {formOpen && (
         <div className="msg-modal" onClick={() => setFormOpen(false)}>
           <div className="msg-card" onClick={(e) => e.stopPropagation()}>
             <h3 style={{ textAlign: 'center' }}>
               🎈나연이에게 메시지 남기기 🎈
             </h3>
-            <p
-              style={{
-                textAlign: 'center',
-                fontSize: '12px',
-                color: 'red',
-                marginTop: '-8px',
-              }}
-            >
-              *작성한 메시지는 오늘의 주인공에게 전달됩니다*
-            </p>
             <form onSubmit={submit}>
               <input
                 placeholder="이름"
@@ -143,11 +157,10 @@ export default function MessagePage() {
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 required
-                style={{ marginBottom: '5px' }}
               />
               <textarea
                 placeholder="메시지를 적어주세요!"
-                maxLength={120}
+                maxLength={500}
                 rows={4}
                 value={text}
                 onChange={(e) => setText(e.target.value)}

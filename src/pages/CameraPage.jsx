@@ -51,6 +51,10 @@ export default function CameraPage() {
     const prevSelected = selectedStickerId
     setSelectedStickerId(null)
 
+    // 👉 저장 시 border 숨김
+    const prevBorder = photoAreaRef.current.style.border
+    photoAreaRef.current.style.border = 'none'
+
     setTimeout(async () => {
       try {
         const dataUrl = await htmlToImage.toPng(photoAreaRef.current, {
@@ -62,14 +66,16 @@ export default function CameraPage() {
         link.download = 'photo.png'
         link.click()
 
-        setMessage('사진이 저장되었습니다 ✅')
+        setMessage('사진이 저장되었습니다')
         setTimeout(() => setMessage(''), 2000)
       } catch (err) {
         console.error('저장 실패:', err)
-        setMessage('저장 실패 ❌')
+        setMessage('저장 실패')
         setTimeout(() => setMessage(''), 2000)
       }
 
+      // 👉 저장 후 다시 border 복원
+      photoAreaRef.current.style.border = prevBorder
       if (prevSelected) setSelectedStickerId(prevSelected)
     }, 50)
   }
@@ -158,7 +164,7 @@ export default function CameraPage() {
           width: '90vw',
           maxWidth: '600px',
           aspectRatio: '2 / 3',
-          border: '3px solid #c4b5fd',
+
           borderRadius: 16,
           overflow: 'hidden',
           position: 'relative',
