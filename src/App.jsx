@@ -1,11 +1,9 @@
-import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import MessagePage from './pages/MessagePage.jsx'
 import CameraPage from './pages/CameraPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import AlbumPage from './pages/AlbumPage.jsx'
-import NayeonPage from './pages/AdminPage.jsx'
 
 export default function App() {
   return (

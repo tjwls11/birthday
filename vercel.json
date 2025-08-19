@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/nayeon", "destination": "/" },
+    { "source": "/nayeon/", "destination": "/" },
+    { "source": "/((?!api/|.*\\..*).*)", "destination": "/" }
+  ]
+}
