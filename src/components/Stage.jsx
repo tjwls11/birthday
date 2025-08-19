@@ -1,9 +1,9 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import kitty from '../assets/kitty-ui.png'
 import iconMessage from '../assets/icon-message-pink.png'
 import iconCamera from '../assets/icon-camera-pink.png'
-import bgmFile from '../assets/bgm.mp3'
+import bgmFile from '../assets/bgm.mp3' // 🎵 public/assets/bgm.mp3 에 넣어두세요!
 
 export default function Stage({ onEnvelopeToggle }) {
   const nav = useNavigate()
@@ -17,7 +17,7 @@ export default function Stage({ onEnvelopeToggle }) {
     }
   }
 
-  // 🔊 재생/정지 토글
+  // 재생/정지 토글
   const togglePlay = () => {
     const audio = audioRef.current
     if (!audio) return
@@ -42,6 +42,7 @@ export default function Stage({ onEnvelopeToggle }) {
     objectFit: 'cover',
     display: 'block',
   }
+
   const circleBtnStyle = {
     width: 100,
     height: 100,
@@ -55,19 +56,16 @@ export default function Stage({ onEnvelopeToggle }) {
     cursor: 'pointer',
   }
 
-  // 상단 바 높이(아이콘 영역을 이 높이만큼 아래로 밀어줌)
-  const TOPBAR_H = 48 // px
-
   return (
     <div className="stage-wrap">
       {/* 🔊 BGM 오디오 */}
       <audio ref={audioRef} src={bgmFile} loop />
 
-      {/* 🔝 상단 고정 재생바 (모바일 safe-area 고려) */}
+      {/* 🔝 상단 재생바 */}
       <div
         style={{
           position: 'fixed',
-          top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+          top: '50px',
           left: '50%',
           transform: 'translateX(-50%)',
           background: '#fff0f5',
@@ -80,8 +78,6 @@ export default function Stage({ onEnvelopeToggle }) {
           zIndex: 1000,
           fontFamily: '"Cute Font", cursive',
           boxShadow: '2px 2px 6px rgba(0,0,0,0.1)',
-          // 좁은 화면에서 최대폭 제한
-          maxWidth: 'calc(100vw - 24px)',
         }}
       >
         <span style={{ fontSize: '18px', color: '#ff4d88' }}>🎵 BGM</span>
@@ -101,15 +97,14 @@ export default function Stage({ onEnvelopeToggle }) {
         </button>
       </div>
 
-      <div
-        className="stage"
-        // ⬇️ 상단바 높이만큼 여백을 줘서 아이콘/키티가 겹치지 않게
-        style={{
-          paddingTop: `calc(${TOPBAR_H}px + env(safe-area-inset-top, 0px) + 16px)`,
-        }}
-      >
+      <div className="stage">
         {/* 상단 중앙 아이콘(메시지 / 카메라) */}
-        <div className="icon-buttons in-stage">
+        <div
+          className="icon-buttons in-stage"
+          style={{
+            paddingTop: '40px', // 원하는 만큼 조절 (예: 80px, 120px)
+          }}
+        >
           <button
             type="button"
             className="icon-btn"
@@ -151,7 +146,9 @@ export default function Stage({ onEnvelopeToggle }) {
           alt="편지를 들고 있는 헬로키티"
           className="kitty-img"
           draggable="false"
-          style={{ paddingTop: '40px' }}
+          style={{
+            paddingTop: '60px', // 원하는 만큼 조절 (예: 80px, 120px)
+          }}
         />
 
         {/* 봉투 클릭 핫스팟 */}
