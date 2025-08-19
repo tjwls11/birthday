@@ -35,12 +35,14 @@ export default function InvitePanel({ open, onClose, photoUrl }) {
         <div className="invite-row">
           <span className="invite-label">장소</span>
           <a
-            href="https://naver.me/FYqIDxTP"
+            href="https://naver.me/G6QfBbFc"
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: '#c2255c', textDecoration: 'underline' }}
           >
             서울 마포구 와우산로 15길 40 302호
+            <br />
+            (꿀약과홀)
           </a>
         </div>
         <div className="invite-row">
