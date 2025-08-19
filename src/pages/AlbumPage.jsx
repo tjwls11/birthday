@@ -93,7 +93,7 @@ export default function AlbumPage() {
           <img src={homeIcon} alt="" style={{ width: 44, height: 44 }} />
         </button>
 
-        <h1 style={{ margin: 0, fontSize: 24 }}>⏳ 2025.08.20 앨범</h1>
+        <h1 style={{ margin: 0, fontSize: 24 }}> 2025.08.20 앨범</h1>
         <p style={{ margin: 0, color: '#666' }}>
           <b>2025-08-20 17:00</b> 이후에 열립니다.
         </p>
