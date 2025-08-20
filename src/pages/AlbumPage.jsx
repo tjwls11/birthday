@@ -2,140 +2,78 @@ import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { db, storage } from '../firebase'
 import { collection, getDocs, addDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { useNavigate } from 'react-router-dom'
 
 import homeIcon from '../assets/home-icon.png'
 
 export default function AlbumPage() {
-  // -------------------- 🔒 오픈 가드 --------------------
-  // 공개 시각을 "고정된 날짜/시간(KST)"로 설정
-  const OPEN_AT_KST_ISO = '2025-08-20T17:00:00+09:00'
-
-  // 고정 시각을 UTC epoch(ms)로
-  const targetEpoch = useMemo(() => Date.parse(OPEN_AT_KST_ISO), [])
-  const [now, setNow] = useState(Date.now())
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  const isOpen = now >= targetEpoch
-  const remain = Math.max(0, targetEpoch - now)
-  const hh = String(Math.floor(remain / 3600000)).padStart(2, '0')
-  const mm = String(Math.floor((remain % 3600000) / 60000)).padStart(2, '0')
-  const ss = String(Math.floor((remain % 60000) / 1000)).padStart(2, '0')
-
   // -------------------- 📸 앨범 로직 --------------------
   const [photos, setPhotos] = useState([])
   const [selectedPhoto, setSelectedPhoto] = useState(null)
   const fileInputRef = useRef(null)
-  const nav = useNavigate()
 
-  // 오픈 "이후"에만 Firestore 읽기
+  // Firestore 읽기 (마운트 시)
   useEffect(() => {
-    if (!isOpen) return
     const fetchPhotos = async () => {
-      const querySnapshot = await getDocs(collection(db, 'photos'))
-      const list = querySnapshot.docs.map((doc) => doc.data())
-      setPhotos(list)
+      try {
+        const querySnapshot = await getDocs(collection(db, 'photos'))
+        const list = querySnapshot.docs.map((doc) => doc.data())
+        setPhotos(list)
+      } catch (err) {
+        console.error('사진 불러오기 실패:', err)
+        alert('사진 불러오기 실패')
+      }
     }
     fetchPhotos()
-  }, [isOpen])
+  }, [])
 
   const handleUploadClick = () => fileInputRef.current?.click()
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const memo =
-      prompt('✨사진에 대한 코멘트 남겨주세요! (없으면 패스!)✨') || ''
+    const memo = prompt('✨사진에 대한 코멘트 남겨주세요! (없으면 패스!)✨') || ''
     try {
       const storageRef = ref(storage, `photos/${Date.now()}-${file.name}`)
       await uploadBytes(storageRef, file)
       const url = await getDownloadURL(storageRef)
       await addDoc(collection(db, 'photos'), { url, memo })
-      setPhotos((prev) => [...prev, { url, memo }])
+
+      // 업로드 후 로컬 상태에도 반영 + 마지막 페이지로 이동
+      setPhotos((prev) => {
+        const updated = [...prev, { url, memo }]
+        // 아래에서 totalPages 재계산을 위해 반환만 하고, 페이지 이동은 setTimeout으로 다음 렌더에서 처리
+        setTimeout(() => {
+          const totalPagesAfter = Math.max(1, Math.ceil(updated.length / PAGE_SIZE))
+          setPage(totalPagesAfter)
+        }, 0)
+        return updated
+      })
     } catch (err) {
       console.error('업로드 실패:', err)
       alert('업로드 실패')
     }
   }
 
-  // -------------------- ⏳ 오픈 전 화면 --------------------
-  if (!isOpen) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          padding: '20px',
-          textAlign: 'center',
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 12,
-        }}
-      >
-        {/* 홈 버튼 (고정) */}
-        <button
-          onClick={() => (window.location.href = '/')}
-          style={{
-            position: 'fixed',
-            top: 12,
-            left: 12,
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-          aria-label="홈으로"
-          title="홈으로"
-        >
-          <img src={homeIcon} alt="" style={{ width: 44, height: 44 }} />
-        </button>
+  // -------------------- 📄 페이지네이션 (2장/페이지) --------------------
+  const PAGE_SIZE = 2
+  const [page, setPage] = useState(1)
+  const totalPages = Math.max(1, Math.ceil(photos.length / PAGE_SIZE))
 
-        <h1 style={{ margin: 0, fontSize: 24 }}> 2025.08.20 앨범</h1>
-        <p style={{ margin: 0, color: '#666' }}>
-          <b>2025-08-20 17:00</b> 이후에 열립니다.
-        </p>
-        <div
-          style={{
-            marginTop: 8,
-            padding: '10px 16px',
-            border: '2px solid #c4b5fd',
-            borderRadius: 12,
-            fontWeight: 700,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          오픈까지 {hh}:{mm}:{ss}
-        </div>
+  // 사진 개수가 줄어들거나 늘어날 때 현재 페이지가 범위를 벗어나지 않도록 보정
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
 
-        <style>{`
-          .btn {
-            background: linear-gradient(135deg, #ff69b4, #ff85c7);
-            color: #fff;
-            border: 0;
-            border-radius: 9999px;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(255,105,180,.25);
-            transition: all .2s ease;
-          }
-          .btn:hover { filter: brightness(1.05); }
-          .btn.ghost {
-            background: #fff;
-            color: #ff69b4;
-            border: 2px solid #ff69b4;
-            box-shadow: none;
-          }
-        `}</style>
-      </div>
-    )
-  }
+  const pagedPhotos = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    const end = start + PAGE_SIZE
+    return photos.slice(start, end)
+  }, [photos, page])
 
-  // -------------------- ✅ 오픈 이후 실제 앨범 화면 --------------------
+  const canPrev = page > 1
+  const canNext = page < totalPages
+
+  // -------------------- UI --------------------
   return (
     <div
       style={{
@@ -145,7 +83,7 @@ export default function AlbumPage() {
         position: 'relative',
       }}
     >
-      {/* 상단 바 */}
+      {/* 상단 바 (고정) */}
       <div
         style={{
           display: 'flex',
@@ -173,11 +111,8 @@ export default function AlbumPage() {
         >
           <img src={homeIcon} alt="" style={{ width: 50, height: 50 }} />
         </button>
-
-        {/* 사진 꾸미러가기 */}
-        <button type="button" className="btn" onClick={() => nav('/camera')}>
-          사진 꾸미러가기
-        </button>
+        {/* 가운데 공간 채우기 (버튼 삭제에 따른 레이아웃 균형) */}
+        <div style={{ width: 50, height: 50 }} />
       </div>
 
       {/* 제목 */}
@@ -204,7 +139,7 @@ export default function AlbumPage() {
         onChange={handleFileChange}
       />
 
-      {/* 사진 목록 */}
+      {/* 사진 목록 (페이지별) */}
       <div
         style={{
           display: 'grid',
@@ -214,9 +149,9 @@ export default function AlbumPage() {
           width: '100%',
         }}
       >
-        {photos.map((p, i) => (
+        {pagedPhotos.map((p, i) => (
           <div
-            key={i}
+            key={`${page}-${i}-${p.url}`}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -246,6 +181,19 @@ export default function AlbumPage() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* 페이지네이션 컨트롤 */}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 24 }}>
+        <button className="btn" disabled={!canPrev} onClick={() => canPrev && setPage((p) => p - 1)}>
+          이전
+        </button>
+        <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+          {page} / {totalPages}
+        </span>
+        <button className="btn" disabled={!canNext} onClick={() => canNext && setPage((p) => p + 1)}>
+          다음
+        </button>
       </div>
 
       {/* 전체보기 모달 */}
@@ -293,6 +241,7 @@ export default function AlbumPage() {
           transition: all .2s ease;
         }
         .btn:hover { filter: brightness(1.05); }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
         .btn.ghost {
           background: #fff;
           color: #ff69b4;
