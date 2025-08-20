@@ -160,7 +160,7 @@ export default function MessagePage() {
               />
               <textarea
                 placeholder="메시지를 적어주세요!"
-                maxLength={500}
+                maxLength={5000}
                 rows={4}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
