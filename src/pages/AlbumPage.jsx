@@ -18,7 +18,10 @@ export default function AlbumPage() {
   const [selectedPhoto, setSelectedPhoto] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+
   const PAGE_SIZE = 2
+  const PAGINATION_RANGE = 5
+
   const fileInputRef = useRef(null)
 
   // 실시간 구독 (photos 컬렉션, 업로드 시간순)
@@ -50,7 +53,7 @@ export default function AlbumPage() {
     })
   }, [totalPages])
 
-  // 현재 페이지 데이터 슬라이스
+  // 현재 페이지 슬라이스
   const pageSlice = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE
     return photos.slice(start, start + PAGE_SIZE)
@@ -69,7 +72,8 @@ export default function AlbumPage() {
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const memo = prompt('✨사진에 대한 코멘트 남겨주세요! (없으면 패스!)✨') || ''
+    const memo =
+      prompt('✨사진에 대한 코멘트 남겨주세요! (없으면 패스!)✨') || ''
 
     setIsUploading(true)
     try {
@@ -92,9 +96,23 @@ export default function AlbumPage() {
     }
   }
 
+  // ----- 페이지네이션 5개 슬라이딩 윈도우 + 이전/다음 "그룹" -----
+  const currentGroup = Math.ceil(currentPage / PAGINATION_RANGE)
+  const groupStart = (currentGroup - 1) * PAGINATION_RANGE + 1
+  const groupEnd = Math.min(groupStart + PAGINATION_RANGE - 1, totalPages)
+  const groupPages = useMemo(
+    () =>
+      Array.from({ length: groupEnd - groupStart + 1 }, (_, i) => groupStart + i),
+    [groupStart, groupEnd]
+  )
+
+  const canPrevGroup = groupStart > 1
+  const canNextGroup = groupEnd < totalPages
+  // -----------------------------------------------
+
   return (
     <div className="album-root">
-      {/* 상단 바: 홈버튼만 (고정 버튼/기타 링크 제거) */}
+      {/* 상단 바 */}
       <div className="album-header">
         <button
           onClick={() => (window.location.href = '/')}
@@ -109,7 +127,13 @@ export default function AlbumPage() {
       {/* 본문 컨테이너 */}
       <main className="album-content">
         <section className="album-top">
-          <h2 className="album-title">2025.08.20 앨범</h2>
+          <div className="album-title-wrap">
+            <h2 className="album-title">2025.08.20 앨범</h2>
+            <p className="album-subtitle">
+              오늘을 추억하기 위한 사진을 업로드해주세요.<br />
+              사진을 클릭하면 전체크기로 보입니다.
+            </p>
+          </div>
 
           <div className="album-actions">
             <button
@@ -129,7 +153,7 @@ export default function AlbumPage() {
           </div>
         </section>
 
-        {/* 사진 2장 그리드 (페이지 슬라이스) */}
+        {/* 사진 2장 그리드 */}
         <section className="album-grid">
           {pageSlice.map((p) => (
             <div
@@ -156,11 +180,19 @@ export default function AlbumPage() {
         </section>
       </main>
 
-      {/* 페이지네이션 (숫자 버튼) */}
+      {/* 페이지네이션 (화면 하단 고정) */}
       {photos.length > 0 && (
         <nav className="album-pagination" aria-label="페이지 이동">
           <div className="album-pagination__inner">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              className="album-page-btn album-page-btn--nav"
+              disabled={!canPrevGroup}
+              onClick={() => goPage(groupStart - 1)}
+            >
+              이전
+            </button>
+
+            {groupPages.map((p) => (
               <button
                 key={p}
                 className={`album-page-btn ${
@@ -172,6 +204,14 @@ export default function AlbumPage() {
                 {p}
               </button>
             ))}
+
+            <button
+              className="album-page-btn album-page-btn--nav"
+              disabled={!canNextGroup}
+              onClick={() => goPage(groupEnd + 1)}
+            >
+              다음
+            </button>
           </div>
         </nav>
       )}
@@ -179,7 +219,11 @@ export default function AlbumPage() {
       {/* 전체보기 모달 */}
       {selectedPhoto && (
         <div className="album-modal" onClick={() => setSelectedPhoto(null)}>
-          <img src={selectedPhoto} alt="fullscreen" className="album-modal-img" />
+          <img
+            src={selectedPhoto}
+            alt="fullscreen"
+            className="album-modal-img"
+          />
         </div>
       )}
 
@@ -189,12 +233,14 @@ export default function AlbumPage() {
           --album-max-w: 960px;
           --album-grid-gap: 16px;
           --album-bottom-safe: calc(env(safe-area-inset-bottom, 0px) + 12px);
+          --pink: #ff69b4;
         }
 
         .album-root {
           min-height: 100vh;
           font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
           color: #222;
+          background: #fff;
         }
 
         /* 상단바 */
@@ -206,7 +252,6 @@ export default function AlbumPage() {
           justify-content: flex-start; /* 홈 버튼만 왼쪽 */
           padding: 12px 16px;
           background: none;
-          backdrop-filter: none;
           z-index: 100;
         }
         .album-icon-btn {
@@ -224,7 +269,7 @@ export default function AlbumPage() {
 
         /* 본문 */
         .album-content {
-          padding: 12px 16px 84px;
+          padding: 12px 16px 120px; /* 하단 고정 네비 공간 확보 */
           max-width: var(--album-max-w);
           margin: 0 auto;
           box-sizing: border-box;
@@ -233,11 +278,17 @@ export default function AlbumPage() {
 
         .album-top {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: space-between;
           gap: 12px;
           margin-bottom: 8px;
           flex-wrap: wrap;
+        }
+
+        .album-title-wrap {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
         }
 
         .album-title {
@@ -246,11 +297,20 @@ export default function AlbumPage() {
           color: #d63384;
           margin: 0;
         }
+        .album-subtitle {
+          margin: 0;
+          font-size: 15px;
+          line-height: 1.5;
+          color: #555;
+        }
 
-        .album-actions { display: flex; gap: 8px; }
+        .album-actions {
+          display: flex;
+          gap: 8px;
+        }
 
         .album-btn {
-          background: linear-gradient(135deg, #ff69b4, #ff85c7);
+          background: linear-gradient(135deg, var(--pink), #ff85c7);
           color: #fff;
           border: 0;
           border-radius: 9999px;
@@ -262,13 +322,13 @@ export default function AlbumPage() {
         }
         .album-btn--ghost {
           background: #fff;
-          color: #ff69b4;
-          border: 2px solid #ff69b4;
+          color: var(--pink);
+          border: 2px solid var(--pink);
         }
         .album-btn:active { transform: translateY(1px); }
         .album-btn:disabled { opacity: .6; cursor: not-allowed; }
 
-        /* 그리드 (2장/페이지) */
+        /* 그리드 */
         .album-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(220px, 1fr));
@@ -312,12 +372,15 @@ export default function AlbumPage() {
           text-align: center;
         }
 
-        /* 페이지네이션 */
+        /* 페이지네이션 (고정) */
         .album-pagination {
-          position: sticky;
+          position: fixed;
+          left: 0;
+          right: 0;
           bottom: var(--album-bottom-safe);
           display: flex;
           justify-content: center;
+          z-index: 110; /* 모달보다 낮게 */
           pointer-events: none;
         }
         .album-pagination__inner {
@@ -326,42 +389,34 @@ export default function AlbumPage() {
           gap: 8px;
           padding: 8px 10px;
           border-radius: 9999px;
-          background: color-mix(in oklab, white 80%, transparent);
+          background: rgba(255,255,255,.92);
           backdrop-filter: blur(8px);
           box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-          margin: 10px auto 0;
-        }
-        @media (min-width: 561px) {
-          .album-pagination {
-            position: static;
-            margin: 12px 0 40px;
-          }
-          .album-pagination__inner {
-            background: transparent;
-            box-shadow: none;
-            backdrop-filter: none;
-            padding: 0;
-          }
+          max-width: calc(var(--album-max-w) + 32px);
         }
 
         .album-page-btn {
           min-width: 44px;
-          height: 44px;
+          height: 40px;
           padding: 0 12px;
           border-radius: 9999px;
-          border: 2px solid #ff69b4;
-          background: #ff69b4;
+          border: 2px solid var(--pink);
+          background: var(--pink);
           color: #fff;
           font-weight: 800;
           font-size: 14px;
           cursor: pointer;
           transition: transform .04s ease;
         }
+        .album-page-btn--nav {
+          font-weight: 700;
+        }
         .album-page-btn--active {
           background: #fff;
-          color: #ff69b4;
+          color: var(--pink);
         }
         .album-page-btn:active { transform: translateY(1px); }
+        .album-page-btn:disabled { opacity: .45; cursor: not-allowed; }
 
         /* 모달 */
         .album-modal {
