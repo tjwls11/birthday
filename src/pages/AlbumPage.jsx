@@ -20,7 +20,7 @@ export default function AlbumPage() {
   const [currentPage, setCurrentPage] = useState(1)
 
   const PAGE_SIZE = 2
-  const PAGINATION_RANGE = 5
+  const WINDOW_LEN = 5
 
   const fileInputRef = useRef(null)
 
@@ -95,17 +95,23 @@ export default function AlbumPage() {
     }
   }
 
-  // ----- 페이지네이션 계산 (5개 슬라이딩 + 그룹 이동) -----
-  const currentGroup = Math.ceil(currentPage / PAGINATION_RANGE)
-  const groupStart = (currentGroup - 1) * PAGINATION_RANGE + 1
-  const groupEnd = Math.min(groupStart + PAGINATION_RANGE - 1, totalPages)
-  const groupPages = useMemo(
-    () => Array.from({ length: groupEnd - groupStart + 1 }, (_, i) => groupStart + i),
-    [groupStart, groupEnd]
+  // ----- 페이지네이션: 이전/다음 = 한 칸 이동, 숫자 버튼 최대 5개 슬라이딩 -----
+  const windowStart = useMemo(() => {
+    if (totalPages <= WINDOW_LEN) return 1
+    // current를 중앙 근처에 두되 경계에서는 고정
+    const half = Math.floor(WINDOW_LEN / 2) // 2
+    let start = currentPage - half
+    if (start < 1) start = 1
+    if (start + WINDOW_LEN - 1 > totalPages) start = totalPages - WINDOW_LEN + 1
+    return start
+  }, [currentPage, totalPages])
+
+  const windowEnd = Math.min(totalPages, windowStart + WINDOW_LEN - 1)
+  const windowPages = useMemo(
+    () => Array.from({ length: windowEnd - windowStart + 1 }, (_, i) => windowStart + i),
+    [windowStart, windowEnd]
   )
 
-  const canPrevGroup = groupStart > 1
-  const canNextGroup = groupEnd < totalPages
   const canPrevPage = currentPage > 1
   const canNextPage = currentPage < totalPages
   // -------------------------------------------------------
@@ -180,7 +186,7 @@ export default function AlbumPage() {
         </section>
       </main>
 
-      {/* 페이지네이션 (하단 고정, 배경 제거 버전) */}
+      {/* 페이지네이션 (하단 고정, 배경 제거, 이전/다음 = 한 칸 이동) */}
       {photos.length > 0 && (
         <nav className="album-pagination" aria-label="페이지 이동">
           <div className="album-pagination__inner">
@@ -190,20 +196,11 @@ export default function AlbumPage() {
               disabled={!canPrevPage}
               onClick={() => goPage(currentPage - 1)}
             >
-              이전페이지
-            </button>
-
-            {/* 그룹 이전 */}
-            <button
-              className="album-page-btn album-page-btn--nav"
-              disabled={!canPrevGroup}
-              onClick={() => goPage(groupStart - 1)}
-            >
               이전
             </button>
 
             {/* 숫자 버튼 (최대 5개) */}
-            {groupPages.map((p) => (
+            {windowPages.map((p) => (
               <button
                 key={p}
                 className={`album-page-btn ${
@@ -216,22 +213,13 @@ export default function AlbumPage() {
               </button>
             ))}
 
-            {/* 그룹 다음 */}
-            <button
-              className="album-page-btn album-page-btn--nav"
-              disabled={!canNextGroup}
-              onClick={() => goPage(groupEnd + 1)}
-            >
-              다음
-            </button>
-
             {/* 한 칸 다음 */}
             <button
               className="album-page-btn album-page-btn--nav"
               disabled={!canNextPage}
               onClick={() => goPage(currentPage + 1)}
             >
-              다음페이지
+              다음
             </button>
           </div>
         </nav>
@@ -261,7 +249,7 @@ export default function AlbumPage() {
           min-height: 100vh;
           font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
           color: #222;
-          background: transparent; /* ✅ 전체 배경 투명 */
+          background: transparent; /* 전체 배경 투명 */
         }
 
         /* 상단바 */
@@ -362,7 +350,7 @@ export default function AlbumPage() {
         }
 
         .album-card {
-          background: #fff;            /* 카드 내부는 유지 (필요하면 이 줄도 제거) */
+          background: #fff; /* 카드 내부 배경 (필요 없으면 transparent로) */
           border-radius: 16px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.16);
           padding: 10px;
@@ -393,7 +381,7 @@ export default function AlbumPage() {
           text-align: center;
         }
 
-        /* 페이지네이션 (고정) — ✅ 배경/블러/그림자 제거 */
+        /* 페이지네이션 (고정, 배경 제거) */
         .album-pagination {
           position: fixed;
           left: 0;
@@ -408,11 +396,11 @@ export default function AlbumPage() {
           pointer-events: auto;
           display: flex;
           gap: 8px;
-          padding: 0;                 /* 배경 패드 제거 */
+          padding: 0;
           border-radius: 9999px;
-          background: transparent;     /* ✅ 하얀 배경 제거 */
-          backdrop-filter: none;       /* ✅ 블러 제거 */
-          box-shadow: none;            /* ✅ 그림자 제거 */
+          background: transparent; /* 배경 제거 */
+          backdrop-filter: none;    /* 블러 제거 */
+          box-shadow: none;         /* 그림자 제거 */
           max-width: calc(var(--album-max-w) + 32px);
         }
 
