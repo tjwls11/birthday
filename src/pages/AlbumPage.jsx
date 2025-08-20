@@ -24,7 +24,7 @@ export default function AlbumPage() {
 
   const fileInputRef = useRef(null)
 
-  // 실시간 구독 (photos 컬렉션, 업로드 시간순)
+  // 실시간 구독 (업로드 시간순)
   useEffect(() => {
     const q = query(collection(db, 'photos'), orderBy('createdAt', 'asc'))
     const unsub = onSnapshot(
@@ -44,7 +44,7 @@ export default function AlbumPage() {
     [photos.length]
   )
 
-  // 사진 추가되면 마지막 페이지로
+  // 새 사진 추가되면 마지막 페이지로
   useEffect(() => {
     setCurrentPage((prev) => {
       const next = Math.min(totalPages, Math.max(1, prev))
@@ -53,7 +53,7 @@ export default function AlbumPage() {
     })
   }, [totalPages])
 
-  // 현재 페이지 슬라이스
+  // 현재 페이지 데이터
   const pageSlice = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE
     return photos.slice(start, start + PAGE_SIZE)
@@ -65,15 +65,14 @@ export default function AlbumPage() {
     [totalPages]
   )
 
-  // 업로드 버튼
+  // 업로드 트리거
   const handleUploadClick = () => fileInputRef.current?.click()
 
   // 업로드 → URL → Firestore 저장
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const memo =
-      prompt('✨사진에 대한 코멘트 남겨주세요! (없으면 패스!)✨') || ''
+    const memo = prompt('✨사진에 대한 코멘트 남겨주세요! (없으면 패스!)✨') || ''
 
     setIsUploading(true)
     try {
@@ -96,19 +95,20 @@ export default function AlbumPage() {
     }
   }
 
-  // ----- 페이지네이션 5개 슬라이딩 윈도우 + 이전/다음 "그룹" -----
+  // ----- 페이지네이션 계산 (5개 슬라이딩 + 그룹 이동) -----
   const currentGroup = Math.ceil(currentPage / PAGINATION_RANGE)
   const groupStart = (currentGroup - 1) * PAGINATION_RANGE + 1
   const groupEnd = Math.min(groupStart + PAGINATION_RANGE - 1, totalPages)
   const groupPages = useMemo(
-    () =>
-      Array.from({ length: groupEnd - groupStart + 1 }, (_, i) => groupStart + i),
+    () => Array.from({ length: groupEnd - groupStart + 1 }, (_, i) => groupStart + i),
     [groupStart, groupEnd]
   )
 
   const canPrevGroup = groupStart > 1
   const canNextGroup = groupEnd < totalPages
-  // -----------------------------------------------
+  const canPrevPage = currentPage > 1
+  const canNextPage = currentPage < totalPages
+  // -------------------------------------------------------
 
   return (
     <div className="album-root">
@@ -180,10 +180,20 @@ export default function AlbumPage() {
         </section>
       </main>
 
-      {/* 페이지네이션 (화면 하단 고정) */}
+      {/* 페이지네이션 (하단 고정, 배경 제거 버전) */}
       {photos.length > 0 && (
         <nav className="album-pagination" aria-label="페이지 이동">
           <div className="album-pagination__inner">
+            {/* 한 칸 이전 */}
+            <button
+              className="album-page-btn album-page-btn--nav"
+              disabled={!canPrevPage}
+              onClick={() => goPage(currentPage - 1)}
+            >
+              이전페이지
+            </button>
+
+            {/* 그룹 이전 */}
             <button
               className="album-page-btn album-page-btn--nav"
               disabled={!canPrevGroup}
@@ -192,6 +202,7 @@ export default function AlbumPage() {
               이전
             </button>
 
+            {/* 숫자 버튼 (최대 5개) */}
             {groupPages.map((p) => (
               <button
                 key={p}
@@ -205,12 +216,22 @@ export default function AlbumPage() {
               </button>
             ))}
 
+            {/* 그룹 다음 */}
             <button
               className="album-page-btn album-page-btn--nav"
               disabled={!canNextGroup}
               onClick={() => goPage(groupEnd + 1)}
             >
               다음
+            </button>
+
+            {/* 한 칸 다음 */}
+            <button
+              className="album-page-btn album-page-btn--nav"
+              disabled={!canNextPage}
+              onClick={() => goPage(currentPage + 1)}
+            >
+              다음페이지
             </button>
           </div>
         </nav>
@@ -240,7 +261,7 @@ export default function AlbumPage() {
           min-height: 100vh;
           font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
           color: #222;
-          background: #fff;
+          background: transparent; /* ✅ 전체 배경 투명 */
         }
 
         /* 상단바 */
@@ -249,7 +270,7 @@ export default function AlbumPage() {
           height: var(--album-header-h);
           display: flex;
           align-items: center;
-          justify-content: flex-start; /* 홈 버튼만 왼쪽 */
+          justify-content: flex-start;
           padding: 12px 16px;
           background: none;
           z-index: 100;
@@ -341,7 +362,7 @@ export default function AlbumPage() {
         }
 
         .album-card {
-          background: #fff;
+          background: #fff;            /* 카드 내부는 유지 (필요하면 이 줄도 제거) */
           border-radius: 16px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.16);
           padding: 10px;
@@ -372,7 +393,7 @@ export default function AlbumPage() {
           text-align: center;
         }
 
-        /* 페이지네이션 (고정) */
+        /* 페이지네이션 (고정) — ✅ 배경/블러/그림자 제거 */
         .album-pagination {
           position: fixed;
           left: 0;
@@ -380,18 +401,18 @@ export default function AlbumPage() {
           bottom: var(--album-bottom-safe);
           display: flex;
           justify-content: center;
-          z-index: 110; /* 모달보다 낮게 */
+          z-index: 110;
           pointer-events: none;
         }
         .album-pagination__inner {
           pointer-events: auto;
           display: flex;
           gap: 8px;
-          padding: 8px 10px;
+          padding: 0;                 /* 배경 패드 제거 */
           border-radius: 9999px;
-          background: rgba(255,255,255,.92);
-          backdrop-filter: blur(8px);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+          background: transparent;     /* ✅ 하얀 배경 제거 */
+          backdrop-filter: none;       /* ✅ 블러 제거 */
+          box-shadow: none;            /* ✅ 그림자 제거 */
           max-width: calc(var(--album-max-w) + 32px);
         }
 
