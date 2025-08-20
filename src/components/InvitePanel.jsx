@@ -35,7 +35,7 @@ export default function InvitePanel({ open, onClose, photoUrl }) {
         <div className="invite-row">
           <span className="invite-label">장소</span>
           <a
-            href="https://naver.me/G6QfBbFc"
+            href="https://naver.me/xv3GKVJF"
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: '#c2255c', textDecoration: 'underline' }}
